@@ -1,0 +1,10 @@
+{
+  "name": "taskforge-platform-infra",
+  "version": "1.0.0",
+  "description": "Terraform for TaskForge platform on AWS",
+  "private": true,
+  "scripts": {
+    "test": "cd terraform && terraform fmt -check -recursive && terraform init -backend=false && terraform validate",
+    "fmt": "cd terraform && terraform fmt -recursive"
+  }
+}

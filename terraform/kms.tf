@@ -10,18 +10,18 @@ resource "aws_kms_key" "secrets" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "Root"
-        Effect = "Allow"
+        Sid       = "Root"
+        Effect    = "Allow"
         Principal = { AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root" }
-        Action   = "kms:*"
-        Resource = "*"
+        Action    = "kms:*"
+        Resource  = "*"
       },
       {
-        Sid    = "SecretsManager"
-        Effect = "Allow"
+        Sid       = "SecretsManager"
+        Effect    = "Allow"
         Principal = { Service = "secretsmanager.amazonaws.com" }
-        Action = ["kms:Decrypt", "kms:GenerateDataKey"]
-        Resource = "*"
+        Action    = ["kms:Decrypt", "kms:GenerateDataKey"]
+        Resource  = "*"
         Condition = {
           StringEquals = { "kms:ViaService" = "secretsmanager.${var.aws_region}.amazonaws.com" }
         }
@@ -44,18 +44,18 @@ resource "aws_kms_key" "rds" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "Root"
-        Effect = "Allow"
+        Sid       = "Root"
+        Effect    = "Allow"
         Principal = { AWS = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:root" }
-        Action   = "kms:*"
-        Resource = "*"
+        Action    = "kms:*"
+        Resource  = "*"
       },
       {
-        Sid    = "RDS"
-        Effect = "Allow"
+        Sid       = "RDS"
+        Effect    = "Allow"
         Principal = { Service = "rds.amazonaws.com" }
-        Action = ["kms:Decrypt", "kms:GenerateDataKey"]
-        Resource = "*"
+        Action    = ["kms:Decrypt", "kms:GenerateDataKey"]
+        Resource  = "*"
         Condition = {
           StringEquals = { "kms:ViaService" = "rds.${var.aws_region}.amazonaws.com" }
         }

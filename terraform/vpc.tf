@@ -24,7 +24,7 @@ resource "aws_subnet" "public" {
   map_public_ip_on_launch = true
 
   tags = {
-    "kubernetes.io/role/elb" = "1"
+    "kubernetes.io/role/elb"                                  = "1"
     "kubernetes.io/cluster/${var.project}-${var.environment}" = "shared"
   }
 }
@@ -36,7 +36,7 @@ resource "aws_subnet" "private" {
   availability_zone = local.azs[count.index]
 
   tags = {
-    "kubernetes.io/role/internal-elb" = "1"
+    "kubernetes.io/role/internal-elb"                         = "1"
     "kubernetes.io/cluster/${var.project}-${var.environment}" = "shared"
   }
 }
@@ -98,7 +98,7 @@ resource "aws_flow_log" "main" {
 resource "aws_cloudwatch_log_group" "flow_logs" {
   count             = var.enable_vpc_flow_logs ? 1 : 0
   name              = "/aws/vpc-flow-logs/${var.project}-${var.environment}"
-  retention_in_days  = 14
+  retention_in_days = 14
 }
 
 resource "aws_iam_role" "flow_logs" {
@@ -119,9 +119,9 @@ resource "aws_iam_role" "flow_logs" {
 }
 
 resource "aws_iam_role_policy" "flow_logs" {
-  count  = var.enable_vpc_flow_logs ? 1 : 0
-  name   = "flow-logs"
-  role   = aws_iam_role.flow_logs[0].id
+  count = var.enable_vpc_flow_logs ? 1 : 0
+  name  = "flow-logs"
+  role  = aws_iam_role.flow_logs[0].id
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{

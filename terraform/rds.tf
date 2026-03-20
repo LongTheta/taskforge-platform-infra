@@ -31,7 +31,7 @@ resource "aws_db_instance" "main" {
   identifier        = "${var.project}-${var.environment}"
   engine            = "postgres"
   engine_version    = "15"
-  instance_class   = var.rds_instance_class
+  instance_class    = var.rds_instance_class
   allocated_storage = 20
 
   db_name  = "taskforge"
@@ -42,10 +42,10 @@ resource "aws_db_instance" "main" {
   vpc_security_group_ids = [aws_security_group.rds.id]
   publicly_accessible    = false
 
-  backup_retention_period           = 7
-  backup_window                    = "03:00-04:00"
-  storage_encrypted                = true
-  kms_key_id                       = aws_kms_key.rds.arn
-  multi_az                         = var.environment == "prod"
-  enabled_cloudwatch_logs_exports  = ["postgresql"]
+  backup_retention_period         = 7
+  backup_window                   = "03:00-04:00"
+  storage_encrypted               = true
+  kms_key_id                      = aws_kms_key.rds.arn
+  multi_az                        = var.environment == "prod"
+  enabled_cloudwatch_logs_exports = ["postgresql"]
 }

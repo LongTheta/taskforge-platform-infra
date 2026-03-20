@@ -144,6 +144,7 @@ taskforge-platform-infra/
 │   └── iam-execution-requirements.md
 ├── deploy/
 │   └── external-secrets-aws-example.yaml
+├── package.json        # npm test = terraform fmt -check, init, validate
 ├── README.md
 ├── LICENSE
 └── .gitignore
@@ -175,6 +176,24 @@ To run an AWS Well-Architected assessment of the full TaskForge stack:
 - `terraform/*.tf` — Patches and incremental fixes
 
 The advisor repo (`aws-repo-well-architected-advisor`) is referenced for guidance but is not modified.
+
+---
+
+## Repo Rating
+
+**Overall: 8.2 / 10**
+
+| Category      | Score | Notes                                                                 |
+|---------------|-------|-----------------------------------------------------------------------|
+| Documentation | 9/10  | Clear README, design source, Quick Start, CI/CD, security defaults    |
+| Architecture  | 9/10  | Well-Architected: VPC, EKS, RDS, ECR, KMS, IRSA, CloudTrail, VPC endpoints |
+| Security      | 8.5/10| KMS, IRSA, IAM policy, CloudTrail, Flow Logs, ECR scanning, tfplan in .gitignore |
+| CI/CD         | 8/10  | GitHub Actions + GitLab CI (validate → plan); no auto-apply           |
+| Code quality  | 7.5/10| Terraform validates; modular layout; run `terraform fmt` to tidy       |
+| Operability   | 8/10  | Bootstrap script, example configs, post-apply steps                    |
+| Completeness  | 8/10  | Covers platform needs; assessment docs and apply-order guidance        |
+
+**How we got it:** Run `terraform init -backend=false`, `terraform validate`, and `terraform fmt -check` in `terraform/`. The rating is derived from manual review of docs, architecture, security defaults, CI/CD config, and Terraform validation results. Run `npm test` to re-validate (see `package.json`).
 
 ---
 

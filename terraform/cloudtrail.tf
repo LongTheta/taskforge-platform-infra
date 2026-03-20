@@ -52,7 +52,7 @@ resource "aws_s3_bucket_public_access_block" "cloudtrail" {
 
   block_public_acls       = true
   block_public_policy     = true
-  ignore_public_acls     = true
+  ignore_public_acls      = true
   restrict_public_buckets = true
 }
 
@@ -64,18 +64,18 @@ resource "aws_s3_bucket_policy" "cloudtrail" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "AWSCloudTrailAclCheck"
-        Effect = "Allow"
+        Sid       = "AWSCloudTrailAclCheck"
+        Effect    = "Allow"
         Principal = { Service = "cloudtrail.amazonaws.com" }
-        Action   = "s3:GetBucketAcl"
-        Resource = aws_s3_bucket.cloudtrail[0].arn
+        Action    = "s3:GetBucketAcl"
+        Resource  = aws_s3_bucket.cloudtrail[0].arn
       },
       {
-        Sid    = "AWSCloudTrailWrite"
-        Effect = "Allow"
+        Sid       = "AWSCloudTrailWrite"
+        Effect    = "Allow"
         Principal = { Service = "cloudtrail.amazonaws.com" }
-        Action   = "s3:PutObject"
-        Resource = "${aws_s3_bucket.cloudtrail[0].arn}/*"
+        Action    = "s3:PutObject"
+        Resource  = "${aws_s3_bucket.cloudtrail[0].arn}/*"
         Condition = {
           StringEquals = { "s3:x-amz-acl" = "bucket-owner-full-control" }
         }
@@ -88,13 +88,13 @@ resource "aws_cloudtrail" "main" {
   count                         = var.enable_cloudtrail ? 1 : 0
   name                          = "${var.project}-${var.environment}"
   s3_bucket_name                = aws_s3_bucket.cloudtrail[0].id
-  include_global_service_events  = true
+  include_global_service_events = true
   is_multi_region_trail         = false
   enable_log_file_validation    = true
 
   event_selector {
     read_write_type           = "All"
-    include_management_events  = true
+    include_management_events = true
   }
 
   # CloudTrail validates bucket policy before creating; policy must be applied first

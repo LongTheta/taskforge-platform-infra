@@ -35,13 +35,13 @@ resource "aws_iam_role" "eso" {
 }
 
 resource "aws_iam_role_policy" "eso_secrets" {
-  name   = "secrets-manager-read"
-  role   = aws_iam_role.eso.id
+  name = "secrets-manager-read"
+  role = aws_iam_role.eso.id
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Effect   = "Allow"
-      Action   = ["secretsmanager:GetSecretValue"]
+      Effect = "Allow"
+      Action = ["secretsmanager:GetSecretValue"]
       Resource = [
         aws_secretsmanager_secret.backend.arn,
         aws_secretsmanager_secret.security.arn
@@ -86,9 +86,9 @@ resource "aws_iam_policy" "ecr_push" {
     Version = "2012-10-17"
     Statement = [
       {
-        Sid    = "GetAuthToken"
-        Effect = "Allow"
-        Action = ["ecr:GetAuthorizationToken"]
+        Sid      = "GetAuthToken"
+        Effect   = "Allow"
+        Action   = ["ecr:GetAuthorizationToken"]
         Resource = "*"
       },
       {
