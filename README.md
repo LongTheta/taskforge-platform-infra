@@ -4,6 +4,8 @@ Terraform for the TaskForge platform on AWS. Supports **taskforge-backend** and 
 
 **Designed with AWS Well-Architected.** REVIEW BEFORE APPLY.
 
+This repo serves as a **positive test** for **aws-repo-well-architected-advisor** — it demonstrates that the advisor produces production-ready Terraform when applied to the TaskForge stack.
+
 ---
 
 ## Design Source
