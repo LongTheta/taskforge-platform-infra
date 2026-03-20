@@ -1,0 +1,9 @@
+# Terraform backend config — copy to backend.hcl and set values
+# Never commit backend.hcl
+# terraform init -backend-config=backend.hcl
+
+bucket         = "taskforge-terraform-state"
+key            = "platform/terraform.tfstate"
+region         = "us-east-1"
+dynamodb_table = "taskforge-terraform-lock"
+encrypt        = true

@@ -1,0 +1,215 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "TerraformState",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:DeleteObject",
+        "s3:ListBucket"
+      ],
+      "Resource": [
+        "arn:aws:s3:::YOUR_TERRAFORM_STATE_BUCKET",
+        "arn:aws:s3:::YOUR_TERRAFORM_STATE_BUCKET/*"
+      ]
+    },
+    {
+      "Sid": "TerraformStateLock",
+      "Effect": "Allow",
+      "Action": [
+        "dynamodb:GetItem",
+        "dynamodb:PutItem",
+        "dynamodb:DeleteItem",
+        "dynamodb:ConditionCheckItem",
+        "dynamodb:BatchGetItem",
+        "dynamodb:BatchWriteItem",
+        "dynamodb:DescribeTable"
+      ],
+      "Resource": "arn:aws:dynamodb:*:*:table/YOUR_TERRAFORM_LOCK_TABLE"
+    },
+    {
+      "Sid": "VPC",
+      "Effect": "Allow",
+      "Action": [
+        "ec2:CreateVpc",
+        "ec2:DeleteVpc",
+        "ec2:DescribeVpcs",
+        "ec2:ModifyVpcAttribute",
+        "ec2:CreateSubnet",
+        "ec2:DeleteSubnet",
+        "ec2:DescribeSubnets",
+        "ec2:CreateInternetGateway",
+        "ec2:DeleteInternetGateway",
+        "ec2:AttachInternetGateway",
+        "ec2:DetachInternetGateway",
+        "ec2:DescribeInternetGateways",
+        "ec2:AllocateAddress",
+        "ec2:ReleaseAddress",
+        "ec2:CreateNatGateway",
+        "ec2:DeleteNatGateway",
+        "ec2:DescribeNatGateways",
+        "ec2:CreateRouteTable",
+        "ec2:DeleteRouteTable",
+        "ec2:DescribeRouteTables",
+        "ec2:CreateRoute",
+        "ec2:DeleteRoute",
+        "ec2:AssociateRouteTable",
+        "ec2:DisassociateRouteTable",
+        "ec2:CreateFlowLogs",
+        "ec2:DeleteFlowLogs",
+        "ec2:DescribeFlowLogs",
+        "ec2:CreateSecurityGroup",
+        "ec2:DeleteSecurityGroup",
+        "ec2:DescribeSecurityGroups",
+        "ec2:AuthorizeSecurityGroupIngress",
+        "ec2:AuthorizeSecurityGroupEgress",
+        "ec2:RevokeSecurityGroupIngress",
+        "ec2:RevokeSecurityGroupEgress",
+        "ec2:CreateVpcEndpoint",
+        "ec2:DeleteVpcEndpoints",
+        "ec2:DescribeVpcEndpoints",
+        "ec2:ModifyVpcEndpoint",
+        "ec2:DescribeAvailabilityZones",
+        "ec2:DescribeAccountAttributes"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "EKS",
+      "Effect": "Allow",
+      "Action": [
+        "eks:CreateCluster",
+        "eks:DeleteCluster",
+        "eks:DescribeCluster",
+        "eks:UpdateClusterConfig",
+        "eks:CreateNodegroup",
+        "eks:DeleteNodegroup",
+        "eks:DescribeNodegroup",
+        "eks:UpdateNodegroupConfig",
+        "eks:ListClusters",
+        "eks:ListNodegroups",
+        "iam:CreateRole",
+        "iam:DeleteRole",
+        "iam:GetRole",
+        "iam:PassRole",
+        "iam:AttachRolePolicy",
+        "iam:DetachRolePolicy",
+        "iam:PutRolePolicy",
+        "iam:DeleteRolePolicy",
+        "iam:GetRolePolicy"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "RDS",
+      "Effect": "Allow",
+      "Action": [
+        "rds:CreateDBInstance",
+        "rds:DeleteDBInstance",
+        "rds:DescribeDBInstances",
+        "rds:ModifyDBInstance",
+        "rds:CreateDBSubnetGroup",
+        "rds:DeleteDBSubnetGroup",
+        "rds:DescribeDBSubnetGroups"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ECR",
+      "Effect": "Allow",
+      "Action": [
+        "ecr:CreateRepository",
+        "ecr:DeleteRepository",
+        "ecr:DescribeRepositories",
+        "ecr:PutLifecyclePolicy",
+        "ecr:GetLifecyclePolicy",
+        "ecr:PutImageScanningConfiguration"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "SecretsManager",
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:CreateSecret",
+        "secretsmanager:DeleteSecret",
+        "secretsmanager:DescribeSecret",
+        "secretsmanager:PutSecretValue",
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:UpdateSecret"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "KMS",
+      "Effect": "Allow",
+      "Action": [
+        "kms:CreateKey",
+        "kms:CreateAlias",
+        "kms:DeleteKey",
+        "kms:DeleteAlias",
+        "kms:DescribeKey",
+        "kms:GetKeyPolicy",
+        "kms:PutKeyPolicy",
+        "kms:ScheduleKeyDeletion",
+        "kms:EnableKeyRotation",
+        "kms:DisableKeyRotation"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "CloudTrailAndS3",
+      "Effect": "Allow",
+      "Action": [
+        "cloudtrail:CreateTrail",
+        "cloudtrail:DeleteTrail",
+        "cloudtrail:DescribeTrails",
+        "cloudtrail:UpdateTrail",
+        "cloudtrail:GetTrailStatus",
+        "s3:CreateBucket",
+        "s3:DeleteBucket",
+        "s3:GetBucket*",
+        "s3:PutBucket*",
+        "s3:PutObject",
+        "s3:GetObject",
+        "s3:DeleteObject",
+        "s3:ListBucket"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "CloudWatchLogs",
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:DeleteLogGroup",
+        "logs:DescribeLogGroups",
+        "logs:PutRetentionPolicy",
+        "logs:PutResourcePolicy"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "CloudWatchAlarms",
+      "Effect": "Allow",
+      "Action": [
+        "cloudwatch:PutMetricAlarm",
+        "cloudwatch:DeleteAlarms",
+        "cloudwatch:DescribeAlarms"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "OIDC",
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateOpenIDConnectProvider",
+        "iam:DeleteOpenIDConnectProvider",
+        "iam:GetOpenIDConnectProvider"
+      ],
+      "Resource": "*"
+    }
+  ]
+}

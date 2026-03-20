@@ -42,8 +42,10 @@ resource "aws_db_instance" "main" {
   vpc_security_group_ids = [aws_security_group.rds.id]
   publicly_accessible    = false
 
-  backup_retention_period = 7
-  backup_window          = "03:00-04:00"
-  storage_encrypted       = true
-  multi_az               = var.environment == "prod"
+  backup_retention_period           = 7
+  backup_window                    = "03:00-04:00"
+  storage_encrypted                = true
+  kms_key_id                       = aws_kms_key.rds.arn
+  multi_az                         = var.environment == "prod"
+  enabled_cloudwatch_logs_exports  = ["postgresql"]
 }

@@ -1,0 +1,35 @@
+---
+description: TaskForge stack assessment — read backend + security, write to this repo only
+globs: ["**/*.tf", "docs/**", "terraform/**"]
+alwaysApply: false
+---
+
+# TaskForge Stack Assessment
+
+When performing AWS Well-Architected assessment of the TaskForge stack:
+
+## Scope
+
+- **Read:** `../taskforge-backend`, `../taskforge-security`, and this repo (`taskforge-platform-infra`)
+- **Write:** This repo only. Do NOT modify `aws-repo-well-architected-advisor` or the sibling repos (backend, security)
+
+## Outputs (all in this repo)
+
+- **Assessments:** `docs/assessment/` — review reports, findings, scorecard
+- **Terraform updates:** `terraform/*.tf` — patches and incremental fixes
+- **IAM execution requirements:** `terraform/iam-execution-policy.json` + `docs/iam-execution-requirements.md` — permissions for the role running Terraform (EKS, RDS, VPC, ECR, Secrets Manager, etc.)
+- **Compliance mapping:** `docs/compliance-mapping.md` (if created)
+
+## Workflow
+
+1. Read taskforge-backend (app code, configs, CI/CD)
+2. Read taskforge-security (security service, configs)
+3. Read this repo (Terraform)
+4. Infer full architecture and workload profile
+5. Produce evidence-based recommendations
+6. Write assessment to `docs/assessment/`
+7. Apply Terraform patches to `terraform/` as needed
+
+## Reference
+
+Use guidance from `aws-repo-well-architected-advisor` (sibling repo) for Well-Architected pillars, evidence model, and recommendation patterns. Do not edit the advisor repo.

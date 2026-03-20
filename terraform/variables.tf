@@ -33,10 +33,16 @@ variable "data_classification" {
   default     = "internal"
 }
 
-variable "lifecycle" {
-  description = "Lifecycle stage"
+variable "lifecycle_stage" {
+  description = "Lifecycle stage (production, development, etc.)"
   type        = string
   default     = "production"
+}
+
+variable "enable_vpc_flow_logs" {
+  description = "Enable VPC Flow Logs for network audit"
+  type        = bool
+  default     = true
 }
 
 variable "vpc_cidr" {
@@ -61,4 +67,22 @@ variable "rds_instance_class" {
   description = "RDS instance class"
   type        = string
   default     = "db.t3.micro"
+}
+
+variable "eks_endpoint_public_access" {
+  description = "Enable public API endpoint for EKS. Set false for prod to restrict kubectl to VPC."
+  type        = bool
+  default     = true
+}
+
+variable "enable_cloudtrail" {
+  description = "Enable CloudTrail for API audit logging"
+  type        = bool
+  default     = true
+}
+
+variable "enable_vpc_endpoints" {
+  description = "Enable VPC interface endpoints (ECR, Logs) to reduce NAT cost. S3 gateway endpoint always enabled."
+  type        = bool
+  default     = true
 }

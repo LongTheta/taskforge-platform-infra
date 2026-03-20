@@ -37,3 +37,28 @@ output "vpc_id" {
   description = "VPC ID"
   value       = aws_vpc.main.id
 }
+
+output "eso_iam_role_arn" {
+  description = "IRSA role ARN for External Secrets Operator"
+  value       = aws_iam_role.eso.arn
+}
+
+output "lb_controller_iam_role_arn" {
+  description = "IRSA role ARN for AWS Load Balancer Controller"
+  value       = aws_iam_role.lb_controller.arn
+}
+
+output "ecr_push_policy_arn" {
+  description = "IAM policy ARN for ECR push — attach to CI role"
+  value       = aws_iam_policy.ecr_push.arn
+}
+
+output "kms_secrets_key_arn" {
+  description = "KMS key ARN for Secrets Manager"
+  value       = aws_kms_key.secrets.arn
+}
+
+output "kms_rds_key_arn" {
+  description = "KMS key ARN for RDS encryption"
+  value       = aws_kms_key.rds.arn
+}

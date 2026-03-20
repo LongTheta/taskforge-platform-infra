@@ -16,3 +16,9 @@ data_classification = "internal"
 # Dev: smaller; prod: larger
 # eks_node_instance_types = ["t3.medium"]
 # rds_instance_class      = "db.t3.micro"
+
+# Prod: restrict EKS API to VPC (kubectl from bastion/VPN)
+# eks_endpoint_public_access = false
+
+# Observability (default: true)
+# enable_cloudtrail = true

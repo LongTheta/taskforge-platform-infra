@@ -1,9 +1,10 @@
 # Secrets Manager — For External Secrets Operator
 # Store DATABASE_URL, SECRET_KEY, API_KEY
-# ESO fetches and injects into K8s Secrets
+# Encrypted with customer-managed KMS
 
 resource "aws_secretsmanager_secret" "backend" {
-  name = "${var.project}/${var.environment}/backend"
+  name       = "${var.project}/${var.environment}/backend"
+  kms_key_id = aws_kms_key.secrets.arn
 }
 
 resource "aws_secretsmanager_secret_version" "backend" {
@@ -16,7 +17,8 @@ resource "aws_secretsmanager_secret_version" "backend" {
 }
 
 resource "aws_secretsmanager_secret" "security" {
-  name = "${var.project}/${var.environment}/security"
+  name       = "${var.project}/${var.environment}/security"
+  kms_key_id = aws_kms_key.secrets.arn
 }
 
 resource "aws_secretsmanager_secret_version" "security" {
@@ -26,23 +28,4 @@ resource "aws_secretsmanager_secret_version" "security" {
   })
 }
 
-# IAM policy for External Secrets Operator — least privilege
-# TODO: Use IRSA (IAM Roles for Service Accounts) for ESO pod instead of node role
-# Only allow read of these secrets
-resource "aws_iam_role_policy" "eso_secrets" {
-  name   = "${var.project}-${var.environment}-eso-secrets"
-  role   = aws_iam_role.eks_node.name
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect   = "Allow"
-        Action   = ["secretsmanager:GetSecretValue"]
-        Resource = [
-          aws_secretsmanager_secret.backend.arn,
-          aws_secretsmanager_secret.security.arn
-        ]
-      }
-    ]
-  })
-}
+# ESO IAM: See iam.tf — IRSA role for External Secrets Operator

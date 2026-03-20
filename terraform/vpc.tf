@@ -22,6 +22,11 @@ resource "aws_subnet" "public" {
   cidr_block              = cidrsubnet(var.vpc_cidr, 4, count.index)
   availability_zone       = local.azs[count.index]
   map_public_ip_on_launch = true
+
+  tags = {
+    "kubernetes.io/role/elb" = "1"
+    "kubernetes.io/cluster/${var.project}-${var.environment}" = "shared"
+  }
 }
 
 resource "aws_subnet" "private" {
@@ -29,6 +34,11 @@ resource "aws_subnet" "private" {
   vpc_id            = aws_vpc.main.id
   cidr_block        = cidrsubnet(var.vpc_cidr, 4, count.index + 4)
   availability_zone = local.azs[count.index]
+
+  tags = {
+    "kubernetes.io/role/internal-elb" = "1"
+    "kubernetes.io/cluster/${var.project}-${var.environment}" = "shared"
+  }
 }
 
 resource "aws_internet_gateway" "main" {
@@ -73,4 +83,57 @@ resource "aws_route_table_association" "private" {
   count          = length(local.azs)
   subnet_id      = aws_subnet.private[count.index].id
   route_table_id = aws_route_table.private[count.index].id
+}
+
+# VPC Flow Logs — audit network traffic (security best practice)
+resource "aws_flow_log" "main" {
+  count                = var.enable_vpc_flow_logs ? 1 : 0
+  vpc_id               = aws_vpc.main.id
+  traffic_type         = "ALL"
+  log_destination_type = "cloud-watch-logs"
+  log_destination      = aws_cloudwatch_log_group.flow_logs[0].arn
+  iam_role_arn         = aws_iam_role.flow_logs[0].arn
+}
+
+resource "aws_cloudwatch_log_group" "flow_logs" {
+  count             = var.enable_vpc_flow_logs ? 1 : 0
+  name              = "/aws/vpc-flow-logs/${var.project}-${var.environment}"
+  retention_in_days  = 14
+}
+
+resource "aws_iam_role" "flow_logs" {
+  count = var.enable_vpc_flow_logs ? 1 : 0
+
+  name = "${var.project}-${var.environment}-vpc-flow-logs"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "vpc-flow-logs.amazonaws.com"
+      }
+    }]
+  })
+}
+
+resource "aws_iam_role_policy" "flow_logs" {
+  count  = var.enable_vpc_flow_logs ? 1 : 0
+  name   = "flow-logs"
+  role   = aws_iam_role.flow_logs[0].id
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents",
+        "logs:DescribeLogGroups",
+        "logs:DescribeLogStreams"
+      ]
+      Resource = "${aws_cloudwatch_log_group.flow_logs[0].arn}:*"
+    }]
+  })
 }

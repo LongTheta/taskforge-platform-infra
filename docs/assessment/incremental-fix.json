@@ -1,0 +1,52 @@
+{
+  "fixes": [
+    {
+      "id": "F1",
+      "title": "CloudWatch alarms for RDS",
+      "patch_type": "terraform",
+      "target_files": ["terraform/observability.tf"],
+      "risk_reduction": "Early detection of RDS CPU and connection issues; faster incident response",
+      "affected_control_area": "observability",
+      "effort": "low",
+      "priority": "P2",
+      "evidence_required_to_close": "Alarms created and tested; alarm response documented",
+      "patch_content": "Added observability.tf with rds_cpu and rds_connections alarms"
+    },
+    {
+      "id": "F2",
+      "title": "VPC endpoints for S3, ECR, Logs",
+      "patch_type": "terraform",
+      "target_files": ["terraform/vpc_endpoints.tf", "terraform/variables.tf"],
+      "risk_reduction": "Reduces NAT data transfer cost; improves private connectivity to AWS services",
+      "affected_control_area": "cost_optimization",
+      "effort": "medium",
+      "priority": "P2",
+      "evidence_required_to_close": "Endpoints deployed; NAT data transfer reduced",
+      "patch_content": "Added vpc_endpoints.tf with S3 gateway, ECR API/DKR, Logs interface endpoints"
+    },
+    {
+      "id": "F3",
+      "title": "CloudTrail S3 bucket encryption",
+      "patch_type": "terraform",
+      "target_files": ["terraform/cloudtrail.tf"],
+      "risk_reduction": "Encryption at rest for audit logs; compliance alignment",
+      "affected_control_area": "security",
+      "effort": "low",
+      "priority": "P3",
+      "evidence_required_to_close": "S3 bucket has server_side_encryption_configuration",
+      "patch_content": "Added aws_s3_bucket_server_side_encryption_configuration for CloudTrail bucket"
+    },
+    {
+      "id": "F4",
+      "title": "RDS CloudWatch logs export",
+      "patch_type": "terraform",
+      "target_files": ["terraform/rds.tf"],
+      "risk_reduction": "PostgreSQL logs in CloudWatch for troubleshooting and audit",
+      "affected_control_area": "observability",
+      "effort": "low",
+      "priority": "P2",
+      "evidence_required_to_close": "RDS enabled_cloudwatch_logs_exports includes postgresql",
+      "patch_content": "Added enabled_cloudwatch_logs_exports = [\"postgresql\"] to aws_db_instance"
+    }
+  ]
+}

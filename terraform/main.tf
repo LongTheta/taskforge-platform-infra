@@ -9,14 +9,15 @@ terraform {
       source  = "hashicorp/aws"
       version = "~> 5.0"
     }
+    tls = {
+      source  = "hashicorp/tls"
+      version = "~> 4.0"
+    }
   }
-  # Uncomment for remote state
-  # backend "s3" {
-  #   bucket         = "taskforge-terraform-state"
-  #   key            = "platform/terraform.tfstate"
-  #   region         = "us-east-1"
-  #   dynamodb_table = "taskforge-terraform-lock"
-  # }
+  # Remote state: terraform init -backend-config=backend.hcl
+  # Copy backend.hcl.example to backend.hcl and set bucket, key, region, dynamodb_table.
+  # Bootstrap backend: ./scripts/bootstrap-backend.sh
+  backend "s3" {}
 }
 
 provider "aws" {
@@ -30,7 +31,7 @@ provider "aws" {
       ManagedBy          = "terraform"
       Purpose            = "taskforge-platform"
       DataClassification = var.data_classification
-      Lifecycle          = var.lifecycle
+      Lifecycle          = var.lifecycle_stage
     }
   }
 }
