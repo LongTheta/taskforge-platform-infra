@@ -13,6 +13,10 @@ terraform {
       source  = "hashicorp/tls"
       version = "~> 4.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
   }
   # Remote state: terraform init -backend-config=backend.hcl
   # Copy backend.hcl.example to backend.hcl and set bucket, key, region, dynamodb_table.

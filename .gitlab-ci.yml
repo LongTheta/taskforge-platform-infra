@@ -1,0 +1,55 @@
+# GitLab CI for Terraform — validate, format check, plan
+# Created after Terraform was authored; automates checks before apply.
+# https://docs.gitlab.com/ee/ci/
+
+stages:
+  - validate
+  - plan
+
+variables:
+  TF_VERSION: "1.5"
+  TF_WORKING_DIR: terraform
+
+.terraform_base:
+  image:
+    name: hashicorp/terraform:${TF_VERSION}
+    entrypoint: [""]
+  before_script:
+    - cd ${TF_WORKING_DIR}
+
+validate:
+  stage: validate
+  extends: .terraform_base
+  script:
+    - terraform fmt -check -recursive
+    - terraform init -backend=false
+    - terraform validate
+  rules:
+    - changes:
+        - terraform/**/*
+        - .gitlab-ci.yml
+
+plan:
+  stage: plan
+  extends: .terraform_base
+  script:
+    - cp backend.hcl.example backend.hcl
+    - terraform init -backend-config=backend.hcl
+    - terraform plan -no-color -input=false -out=tfplan
+  variables:
+    TF_VAR_environment: ${TF_VAR_ENVIRONMENT:-dev}
+    TF_VAR_db_password: $TF_VAR_DB_PASSWORD
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - terraform/**/*
+        - .gitlab-ci.yml
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "master"
+      changes:
+        - terraform/**/*
+        - .gitlab-ci.yml
+  # Configure AWS credentials via CI/CD variables:
+  # - AWS_ACCESS_KEY_ID (masked)
+  # - AWS_SECRET_ACCESS_KEY (masked)
+  # - TF_VAR_ENVIRONMENT (optional, default: dev)
+  # - TF_VAR_DB_PASSWORD (masked)

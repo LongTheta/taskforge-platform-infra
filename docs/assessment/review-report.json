@@ -7,66 +7,292 @@
     "reasoning": "EKS-based microservices (backend API + security scanner), RDS PostgreSQL, Secrets Manager, IRSA. Multi-AZ for prod. GitOps-ready (ArgoCD). Moderate traffic, stateful, security-sensitive."
   },
   "production_readiness": "CONDITIONAL",
-  "weighted_score": 7.2,
+  "weighted_overall_score": 7.2,
   "letter_grade": "B",
+  "confidence_level": "Strongly Inferred",
+  "confidence_score": 0.85,
+  "category_weights": {
+    "security": 0.2,
+    "reliability": 0.15,
+    "performance_efficiency": 0.1,
+    "cost_optimization": 0.15,
+    "operational_excellence": 0.15,
+    "observability": 0.15,
+    "compliance_evidence_quality": 0.1
+  },
   "categories": {
-    "security": { "score": 8, "rationale": "KMS, IRSA, private subnets, VPC Flow Logs, CloudTrail. Placeholder secrets need rotation." },
-    "reliability": { "score": 8, "rationale": "Multi-AZ RDS for prod, 2 AZs, backup retention. EKS single node group." },
-    "cost_optimization": { "score": 6, "rationale": "NAT Gateway per AZ; no VPC endpoints for S3/ECR. Cost tags present." },
-    "operational_excellence": { "score": 7, "rationale": "CI with lint, test, security, SBOM, promote gate. No runbook linkage." },
-    "observability": { "score": 5, "rationale": "VPC Flow Logs, CloudTrail. Missing: RDS CloudWatch logs, CloudWatch alarms." },
-    "compliance_evidence_quality": { "score": 7, "rationale": "Audit logging present. Compliance mapping not documented." }
+    "security": {
+      "score": 8,
+      "rationale": "KMS, IRSA, private subnets, VPC Flow Logs, CloudTrail, S3 encryption. Placeholder secrets and db_password in state need remediation.",
+      "evidence_found": ["KMS keys for RDS and Secrets Manager", "IRSA for ESO and LB controller", "RDS in private subnets", "CloudTrail S3 encryption", "VPC Flow Logs"],
+      "missing_evidence": ["Secrets rotation documented", "db_password not in Terraform state"],
+      "key_risks": ["Placeholder secrets in Secrets Manager", "RDS password flows through state via secrets.tf"],
+      "recommended_actions": ["Replace placeholder secrets before prod", "Use external secret mutation for DB password", "Add CloudTrail bucket random_id for global uniqueness"]
+    },
+    "reliability": {
+      "score": 8,
+      "rationale": "Multi-AZ RDS for prod, 2 AZs, backup retention 7 days. EKS single node group.",
+      "evidence_found": ["RDS multi_az for prod", "Backup retention 7 days", "Private subnets in 2 AZs"],
+      "missing_evidence": [],
+      "key_risks": ["EKS single node group; no spread across AZs for node group"],
+      "recommended_actions": ["Consider node group in multiple AZs for HA"]
+    },
+    "cost_optimization": {
+      "score": 7,
+      "rationale": "VPC endpoints (S3, ECR, Logs) reduce NAT cost. Cost tags present.",
+      "evidence_found": ["S3 gateway endpoint", "ECR and Logs interface endpoints", "default_tags with CostCenter"],
+      "missing_evidence": [],
+      "key_risks": [],
+      "recommended_actions": []
+    },
+    "operational_excellence": {
+      "score": 7,
+      "rationale": "Terraform CI with validate, plan. Backend CI: lint, test, security, SBOM, promote gate. CI pushes to GHCR, not ECR.",
+      "evidence_found": ["terraform.yml: validate, plan", "Backend ci.yml: lint, test, security, SBOM", "Manual promote gate (production environment)"],
+      "missing_evidence": ["ECR push in backend CI", "Runbook linkage"],
+      "key_risks": ["Platform provides ECR but backend pushes to GHCR; deployment path mismatch"],
+      "recommended_actions": ["Add ECR push step to backend CI for AWS deployment"]
+    },
+    "observability": {
+      "score": 6,
+      "rationale": "VPC Flow Logs, CloudTrail, RDS CloudWatch logs, RDS CPU/connections alarms. Missing EKS cluster alarm.",
+      "evidence_found": ["VPC Flow Logs", "CloudTrail", "RDS enabled_cloudwatch_logs_exports", "RDS CPU and connections alarms"],
+      "missing_evidence": ["EKS cluster/control plane alarm", "Application metrics aggregation"],
+      "key_risks": ["No EKS-specific alarm for node or control plane health"],
+      "recommended_actions": ["Add EKS cluster alarm for control plane or node health"]
+    },
+    "compliance_evidence_quality": {
+      "score": 7,
+      "rationale": "Audit logging (CloudTrail, VPC Flow Logs). Compliance mapping not documented.",
+      "evidence_found": ["CloudTrail with management events", "VPC Flow Logs", "RDS CloudWatch logs"],
+      "missing_evidence": ["Compliance control mapping document"],
+      "key_risks": [],
+      "recommended_actions": ["Document NIST/control mapping if regulated"]
+    }
+  },
+  "production_baseline": {
+    "required_components": [
+      { "id": "networking_subnets", "component": "VPC subnet configuration", "category": "reliability" },
+      { "id": "network_isolation", "component": "Network isolation (private subnets, security groups)", "category": "security" },
+      { "id": "iam_roles", "component": "IAM roles and policies", "category": "security" },
+      { "id": "secrets_management", "component": "Secrets not in code", "category": "security" },
+      { "id": "encryption_at_rest", "component": "Encryption for sensitive data", "category": "security" },
+      { "id": "cost_allocation_tags", "component": "Cost allocation tags", "category": "cost_optimization" },
+      { "id": "cicd_apply", "component": "CI/CD with apply capability", "category": "operational_excellence" },
+      { "id": "approval_gate_prod", "component": "Approval gate for production", "category": "operational_excellence" },
+      { "id": "observability", "component": "Logging and metrics", "category": "observability" }
+    ],
+    "missing_components": [
+      { "component_id": "secrets_management", "reason": "Placeholder secrets (REPLACE_WITH_*) in Secrets Manager; db_password flows through Terraform state", "finding_ids": ["F2", "F6"] }
+    ],
+    "conditional_reason": "CONDITIONAL: Placeholder secrets and db_password in state must be replaced before production. CI pushes to GHCR; add ECR push for AWS-native deployment. CloudTrail bucket name not globally unique."
   },
   "findings": [
     {
       "id": "F1",
-      "title": "No CloudWatch alarms for RDS, EKS",
+      "title": "CloudTrail S3 bucket name not globally unique",
+      "summary": "S3 bucket names are globally unique; current pattern may collide across accounts/regions.",
       "severity": "MEDIUM",
-      "category": "observability",
-      "evidence_type": "missing",
-      "affected_files": ["terraform/"],
-      "recommendation": "Add CloudWatch alarms for RDS CPU, RDS connections, EKS node health.",
-      "effort": "low"
+      "category": "operational_excellence",
+      "blocking_status": "improvement",
+      "affected_files": ["terraform/cloudtrail.tf"],
+      "evidence": "Bucket uses ${var.project}-${var.environment}-cloudtrail-logs; no random_id suffix. Per terraform-deployment-checklist.md, S3/CloudTrail buckets need random_id for uniqueness.",
+      "impact": "terraform apply may fail with BucketAlreadyExists when deploying to new account or if another stack uses same project/env.",
+      "recommendation": "Add random_id resource and suffix to CloudTrail bucket name: ${var.project}-${var.environment}-cloudtrail-${random_id.suffix.hex}",
+      "remediation_plan": {
+        "steps": [
+          "Add hashicorp/random provider to main.tf",
+          "Add random_id.suffix resource in cloudtrail.tf",
+          "Update aws_s3_bucket.cloudtrail bucket attribute to include random_id.suffix.hex"
+        ],
+        "terraform_resources": ["random_id", "aws_s3_bucket.cloudtrail"],
+        "dependencies": [],
+        "validation_steps": ["terraform validate", "terraform plan"]
+      },
+      "expected_score_impact": 0.15,
+      "implementation_effort": "low",
+      "evidence_type": "observed",
+      "confidence": "Confirmed",
+      "source_reference": "terraform/cloudtrail.tf lines 4-11"
     },
     {
       "id": "F2",
-      "title": "No VPC endpoints for S3, ECR",
-      "severity": "MEDIUM",
-      "category": "cost_optimization",
-      "evidence_type": "missing",
-      "affected_files": ["terraform/vpc.tf"],
-      "recommendation": "Add VPC gateway endpoint for S3, interface endpoints for ECR to reduce NAT data transfer cost.",
-      "effort": "medium"
+      "title": "Placeholder secrets in Secrets Manager",
+      "summary": "Backend and security secrets contain REPLACE_WITH_* placeholders.",
+      "severity": "HIGH",
+      "category": "security",
+      "blocking_status": "deployment_blocker",
+      "affected_files": ["terraform/secrets.tf"],
+      "evidence": "secret_string includes 'REPLACE_WITH_OPENSSL_RAND_HEX_32_OUTPUT' and 'REPLACE_WITH_STRONG_API_KEY'. Observed in secrets.tf.",
+      "impact": "Production deployment will use insecure placeholder values; JWT signing and API key auth will be weak or predictable.",
+      "recommendation": "Replace placeholders before prod: use External Secrets mutation, or terraform apply with -var='db_password=...' and pre-populate Secrets Manager with real values via separate process.",
+      "remediation_plan": {
+        "steps": [
+          "Generate SECRET_KEY: openssl rand -hex 32",
+          "Generate API_KEY for security service",
+          "Store in Secrets Manager via AWS CLI or separate bootstrap; or use External Secrets with templateFrom",
+          "Remove placeholder values from terraform or use data source to reference externally-created secret"
+        ],
+        "terraform_resources": ["aws_secretsmanager_secret_version.backend", "aws_secretsmanager_secret_version.security"],
+        "dependencies": [],
+        "validation_steps": ["Verify secret values in AWS Console; ensure no REPLACE_WITH in prod"]
+      },
+      "expected_score_impact": 0.4,
+      "implementation_effort": "medium",
+      "evidence_type": "observed",
+      "confidence": "Confirmed",
+      "source_reference": "terraform/secrets.tf lines 12-28"
     },
     {
       "id": "F3",
-      "title": "CloudTrail S3 bucket lacks encryption",
-      "severity": "LOW",
+      "title": "RDS password in Terraform state",
+      "summary": "db_password flows through secrets.tf into state; deployment checklist requires secrets outside state.",
+      "severity": "MEDIUM",
       "category": "security",
-      "evidence_type": "missing",
-      "affected_files": ["terraform/cloudtrail.tf"],
-      "recommendation": "Add server-side encryption to CloudTrail S3 bucket.",
-      "effort": "low"
+      "blocking_status": "improvement",
+      "affected_files": ["terraform/secrets.tf", "terraform/rds.tf"],
+      "evidence": "secrets.tf embeds var.db_password in aws_secretsmanager_secret_version.backend secret_string. RDS uses var.db_password directly. Both flow through Terraform state.",
+      "impact": "Terraform state contains sensitive credentials; state compromise exposes DB password. Compliance risk for regulated environments.",
+      "recommendation": "Use external secret creation: create RDS and Secrets Manager secret via bootstrap script or separate pipeline that does not store password in state. Or use SSM Parameter Store with data source; avoid passing password through Terraform.",
+      "remediation_plan": {
+        "steps": [
+          "Document: db_password must be set via TF_VAR or -var at apply time; never commit",
+          "For prod: use AWS Secrets Manager rotation or bootstrap that creates secret outside Terraform",
+          "Consider: RDS IAM auth for app; reduce need for static password in state"
+        ],
+        "terraform_resources": ["aws_secretsmanager_secret_version.backend"],
+        "dependencies": [],
+        "validation_steps": ["Ensure no secrets in state file; use remote state with encryption"]
+      },
+      "expected_score_impact": 0.3,
+      "implementation_effort": "high",
+      "evidence_type": "observed",
+      "confidence": "Confirmed",
+      "source_reference": "terraform/secrets.tf line 13"
     },
     {
       "id": "F4",
-      "title": "RDS CloudWatch logs not enabled",
+      "title": "No EKS cluster alarm",
+      "summary": "Observability has RDS alarms only; no EKS control plane or node health alarm.",
       "severity": "LOW",
       "category": "observability",
+      "blocking_status": "improvement",
+      "affected_files": ["terraform/observability.tf"],
+      "evidence": "observability.tf defines rds_cpu and rds_connections alarms only. No aws_cloudwatch_metric_alarm for EKS.",
+      "impact": "EKS cluster or node issues may go undetected; slower incident response.",
+      "recommendation": "Add CloudWatch alarm for EKS cluster status or node group health (e.g., cluster endpoint 5xx or node CPU).",
+      "remediation_plan": {
+        "steps": [
+          "Add aws_cloudwatch_metric_alarm for EKS cluster (e.g., ControlPlaneRequests or custom metric)",
+          "Or add alarm for EKS node group instance health if available"
+        ],
+        "terraform_resources": ["aws_cloudwatch_metric_alarm"],
+        "dependencies": [],
+        "validation_steps": ["terraform plan", "Verify alarm in CloudWatch"]
+      },
+      "expected_score_impact": 0.15,
+      "implementation_effort": "low",
       "evidence_type": "missing",
-      "affected_files": ["terraform/rds.tf"],
-      "recommendation": "Enable enabled_cloudwatch_logs_exports for PostgreSQL.",
-      "effort": "low"
+      "confidence": "Strongly Inferred",
+      "source_reference": "terraform/observability.tf"
     },
     {
       "id": "F5",
-      "title": "CI pushes to GHCR, not ECR",
+      "title": "Backend CI pushes to GHCR, not ECR",
+      "summary": "taskforge-backend CI pushes images to ghcr.io; platform-infra provides ECR repositories.",
       "severity": "LOW",
       "category": "operational_excellence",
+      "blocking_status": "improvement",
+      "affected_files": ["taskforge-backend/.github/workflows/ci.yml"],
+      "evidence": "push-and-sign job uses ghcr.io registry. Platform-infra outputs ecr_backend_url and ecr_push_policy_arn for ECR push.",
+      "impact": "ArgoCD/Kustomize overlays may reference ECR; image source mismatch. Manual sync of images or dual-push needed for AWS deployment.",
+      "recommendation": "Add ECR push step to backend CI when deploying to AWS; use ecr_push_policy_arn from platform-infra outputs. Support both GHCR (GitHub-native) and ECR (AWS) as deployment targets.",
+      "remediation_plan": {
+        "steps": [
+          "Add job or step to backend CI: docker push to ECR using AWS credentials (OIDC or secrets)",
+          "Use platform-infra output ecr_backend_url as push target",
+          "Attach ecr_push_policy_arn to CI role"
+        ],
+        "terraform_resources": [],
+        "dependencies": [],
+        "validation_steps": ["CI pushes to ECR; ArgoCD pulls from ECR"]
+      },
+      "expected_score_impact": 0.1,
+      "implementation_effort": "medium",
       "evidence_type": "observed",
-      "affected_files": ["../taskforge-backend/.github/workflows/ci.yml"],
-      "recommendation": "Add ECR push step for AWS deployment; platform-infra provides ECR and ecr_push_policy_arn.",
-      "effort": "medium"
+      "confidence": "Confirmed",
+      "source_reference": "taskforge-backend/.github/workflows/ci.yml"
+    },
+    {
+      "id": "F6",
+      "title": "CloudTrail depends_on should include encryption config",
+      "summary": "Apply-order doc requires bucket policy before CloudTrail; encryption config should complete before trail creation for consistency.",
+      "severity": "LOW",
+      "category": "security",
+      "blocking_status": "improvement",
+      "affected_files": ["terraform/cloudtrail.tf"],
+      "evidence": "CloudTrail depends_on lists bucket, policy, public_access_block. aws_s3_bucket_server_side_encryption_configuration exists but is not in depends_on. Terraform infers from bucket reference; explicit inclusion improves clarity.",
+      "impact": "Low; Terraform typically orders correctly. Explicit depends_on improves apply-order validation and documentation.",
+      "recommendation": "Add aws_s3_bucket_server_side_encryption_configuration.cloudtrail to CloudTrail depends_on for consistency with apply-order best practices.",
+      "remediation_plan": {
+        "steps": ["Add aws_s3_bucket_server_side_encryption_configuration.cloudtrail to aws_cloudtrail.main depends_on"],
+        "terraform_resources": ["aws_cloudtrail.main"],
+        "dependencies": [],
+        "validation_steps": ["terraform validate", "npm run validate:terraform"]
+      },
+      "expected_score_impact": 0.05,
+      "implementation_effort": "low",
+      "evidence_type": "inferred",
+      "confidence": "Assumed",
+      "source_reference": "terraform/cloudtrail.tf lines 94-99"
     }
-  ]
+  ],
+  "remediation_summary": {
+    "immediate_blockers": ["F2"],
+    "ordered_remediation_plan": ["F2", "F3", "F1", "F4", "F5", "F6"],
+    "ordering_reasoning": "F2 (placeholder secrets) is deployment_blocker — must fix before prod. F3 (secrets in state) is security improvement. F1 (CloudTrail uniqueness) prevents apply failures. F4–F6 are observability and ops improvements.",
+    "first_3_fixes_to_apply": ["F2", "F3", "F1"],
+    "score_projection": {
+      "current_score": 7.2,
+      "score_after_each_fix": [
+        { "finding_id": "F2", "score_after": 7.6, "category_impact": { "security": 0.5 } },
+        { "finding_id": "F3", "score_after": 7.9, "category_impact": { "security": 0.3 } },
+        { "finding_id": "F1", "score_after": 8.0, "category_impact": { "operational_excellence": 0.2 } },
+        { "finding_id": "F4", "score_after": 8.15, "category_impact": { "observability": 0.15 } },
+        { "finding_id": "F5", "score_after": 8.25, "category_impact": { "operational_excellence": 0.1 } },
+        { "finding_id": "F6", "score_after": 8.3, "category_impact": { "security": 0.05 } }
+      ],
+      "score_after_top_3_fixes": 8.0,
+      "final_projected_score": 8.3
+    }
+  },
+  "diagram": {
+    "type": "mermaid",
+    "format": "flowchart",
+    "content": "flowchart TB\n  subgraph Client\n    C[Client / ArgoCD]\n  end\n\n  subgraph EKS[\"EKS Cluster\"]\n    Backend[taskforge-backend\n    FastAPI :8000]\n    Security[taskforge-security\n    CVE/Trivy :8081]\n  end\n\n  subgraph Data\n    RDS[(RDS PostgreSQL)]\n  end\n\n  subgraph AWS_Services\n    ECR[ECR Repos]\n    SM[Secrets Manager]\n    KMS[KMS]\n  end\n\n  subgraph Observability\n    CW[CloudWatch Alarms]\n    CT[CloudTrail]\n    VF[VPC Flow Logs]\n  end\n\n  C -->|ALB/Ingress| Backend\n  C -->|ALB/Ingress| Security\n  Backend -->|SQLAlchemy| RDS\n  Backend -->|IRSA/ESO| SM\n  Security -->|API Key| SM\n  EKS -->|Pull| ECR\n  RDS -->|KMS| KMS\n  SM -->|KMS| KMS",
+    "caption": "Inferred TaskForge architecture: EKS hosts backend and security services; RDS, ECR, Secrets Manager; CloudTrail and VPC Flow Logs for audit.",
+    "confidence": "inferred"
+  },
+  "dora_assessment": {
+    "deployment_frequency": {
+      "status": "partially_inferrable",
+      "evidence": "Backend CI triggers on push to main; promote job has manual environment approval. Terraform CI on terraform/** changes.",
+      "recommendation": "Add Prometheus pipeline metrics or ArgoCD sync metrics for actual deployment count."
+    },
+    "lead_time": {
+      "status": "partially_inferrable",
+      "evidence": "Pipeline stages: lint → test → security → sbom → docker → push-and-sign → promote. Manual gate before prod.",
+      "recommendation": "Track commit-to-deploy via GitHub API or Prometheus exporter."
+    },
+    "change_failure_rate": {
+      "status": "not_inferrable",
+      "evidence": null,
+      "recommendation": "Track pipeline failures; integrate with incident system for deployment-caused incidents."
+    },
+    "mttr": {
+      "status": "not_inferrable",
+      "evidence": null,
+      "recommendation": "Integrate PagerDuty/Opsgenie for alert-to-resolution tracking; add runbook linkage."
+    }
+  }
 }

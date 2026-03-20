@@ -96,10 +96,30 @@ The assessment workflow reads the advisor for guidance, evaluates taskforge-back
 
 ---
 
+## CI/CD
+
+GitHub Actions and GitLab CI pipelines were **added after the Terraform was created** to automate validation and planning. Both run on push and pull/merge requests when `terraform/` changes.
+
+| Platform | Config | Stages |
+|----------|--------|--------|
+| **GitHub** | [`.github/workflows/terraform.yml`](.github/workflows/terraform.yml) | validate (fmt, init, validate) → plan |
+| **GitLab** | [`.gitlab-ci.yml`](.gitlab-ci.yml) | validate → plan |
+
+**Required secrets/variables:**
+- **GitHub:** `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `TF_VAR_DB_PASSWORD`; optional: `AWS_REGION`, `TF_VAR_ENVIRONMENT`
+- **GitLab:** Same as CI/CD variables (mask `TF_VAR_DB_PASSWORD` and `AWS_SECRET_ACCESS_KEY`)
+
+The `validate` stage runs without AWS credentials. The `plan` stage needs AWS credentials and a configured backend (run `./scripts/bootstrap-backend.sh` first).
+
+---
+
 ## Repository Structure
 
 ```
 taskforge-platform-infra/
+├── .github/workflows/
+│   └── terraform.yml    # GitHub Actions
+├── .gitlab-ci.yml       # GitLab CI
 ├── terraform/
 │   ├── main.tf
 │   ├── variables.tf
@@ -112,11 +132,16 @@ taskforge-platform-infra/
 │   ├── secrets.tf
 │   ├── iam.tf         # IRSA (ESO, LB Controller), ECR push, RDS connect
 │   ├── kms.tf         # Customer-managed keys for Secrets Manager, RDS
+│   ├── observability.tf
+│   ├── vpc_endpoints.tf
 │   ├── policies/      # AWS Load Balancer Controller IAM policy
 │   ├── backend.hcl.example
 │   └── terraform.tfvars.example
 ├── scripts/
 │   └── bootstrap-backend.sh  # Create S3 + DynamoDB for Terraform state
+├── docs/
+│   ├── assessment/           # Well-Architected review outputs
+│   └── iam-execution-requirements.md
 ├── deploy/
 │   └── external-secrets-aws-example.yaml
 ├── README.md

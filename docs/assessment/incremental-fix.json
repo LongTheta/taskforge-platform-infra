@@ -2,51 +2,87 @@
   "fixes": [
     {
       "id": "F1",
-      "title": "CloudWatch alarms for RDS",
+      "title": "CloudTrail S3 bucket globally unique name",
       "patch_type": "terraform",
-      "target_files": ["terraform/observability.tf"],
-      "risk_reduction": "Early detection of RDS CPU and connection issues; faster incident response",
-      "affected_control_area": "observability",
+      "target_files": ["terraform/cloudtrail.tf", "terraform/main.tf"],
+      "risk_reduction": "Prevents BucketAlreadyExists on apply; per terraform-deployment-checklist",
+      "affected_control_area": "operational_excellence",
       "effort": "low",
       "priority": "P2",
-      "evidence_required_to_close": "Alarms created and tested; alarm response documented",
-      "patch_content": "Added observability.tf with rds_cpu and rds_connections alarms"
+      "evidence_required_to_close": "Bucket name includes random_id suffix; terraform apply succeeds",
+      "patch_content": "Added random provider; random_id.cloudtrail_suffix; bucket name uses suffix"
     },
     {
       "id": "F2",
-      "title": "VPC endpoints for S3, ECR, Logs",
+      "title": "CloudTrail depends_on encryption config",
       "patch_type": "terraform",
-      "target_files": ["terraform/vpc_endpoints.tf", "terraform/variables.tf"],
-      "risk_reduction": "Reduces NAT data transfer cost; improves private connectivity to AWS services",
-      "affected_control_area": "cost_optimization",
-      "effort": "medium",
-      "priority": "P2",
-      "evidence_required_to_close": "Endpoints deployed; NAT data transfer reduced",
-      "patch_content": "Added vpc_endpoints.tf with S3 gateway, ECR API/DKR, Logs interface endpoints"
+      "target_files": ["terraform/cloudtrail.tf"],
+      "risk_reduction": "Apply-order clarity; per terraform-apply-order",
+      "affected_control_area": "security",
+      "effort": "low",
+      "priority": "P3",
+      "evidence_required_to_close": "depends_on includes aws_s3_bucket_server_side_encryption_configuration.cloudtrail",
+      "patch_content": "Added encryption config to CloudTrail depends_on"
     },
     {
       "id": "F3",
+      "title": "EKS control plane alarm",
+      "patch_type": "terraform",
+      "target_files": ["terraform/observability.tf"],
+      "risk_reduction": "Early detection of EKS control plane 5xx errors",
+      "affected_control_area": "observability",
+      "effort": "low",
+      "priority": "P2",
+      "evidence_required_to_close": "Alarm created; apiserver_request_total_5XX metric (EKS 1.28+)",
+      "patch_content": "Added aws_cloudwatch_metric_alarm.eks_control_plane"
+    },
+    {
+      "id": "F4",
+      "title": "CloudWatch alarms for RDS",
+      "patch_type": "terraform",
+      "target_files": ["terraform/observability.tf"],
+      "risk_reduction": "Early detection of RDS CPU and connection issues",
+      "affected_control_area": "observability",
+      "effort": "low",
+      "priority": "P2",
+      "evidence_required_to_close": "Alarms created and tested",
+      "patch_content": "rds_cpu and rds_connections alarms"
+    },
+    {
+      "id": "F5",
+      "title": "VPC endpoints for S3, ECR, Logs",
+      "patch_type": "terraform",
+      "target_files": ["terraform/vpc_endpoints.tf", "terraform/variables.tf"],
+      "risk_reduction": "Reduces NAT data transfer cost",
+      "affected_control_area": "cost_optimization",
+      "effort": "medium",
+      "priority": "P2",
+      "evidence_required_to_close": "Endpoints deployed",
+      "patch_content": "S3 gateway, ECR API/DKR, Logs interface endpoints"
+    },
+    {
+      "id": "F6",
       "title": "CloudTrail S3 bucket encryption",
       "patch_type": "terraform",
       "target_files": ["terraform/cloudtrail.tf"],
-      "risk_reduction": "Encryption at rest for audit logs; compliance alignment",
+      "risk_reduction": "Encryption at rest for audit logs",
       "affected_control_area": "security",
       "effort": "low",
       "priority": "P3",
       "evidence_required_to_close": "S3 bucket has server_side_encryption_configuration",
-      "patch_content": "Added aws_s3_bucket_server_side_encryption_configuration for CloudTrail bucket"
+      "patch_content": "aws_s3_bucket_server_side_encryption_configuration"
     },
     {
-      "id": "F4",
+      "id": "F7",
       "title": "RDS CloudWatch logs export",
       "patch_type": "terraform",
       "target_files": ["terraform/rds.tf"],
-      "risk_reduction": "PostgreSQL logs in CloudWatch for troubleshooting and audit",
+      "risk_reduction": "PostgreSQL logs in CloudWatch",
       "affected_control_area": "observability",
       "effort": "low",
       "priority": "P2",
-      "evidence_required_to_close": "RDS enabled_cloudwatch_logs_exports includes postgresql",
-      "patch_content": "Added enabled_cloudwatch_logs_exports = [\"postgresql\"] to aws_db_instance"
+      "evidence_required_to_close": "enabled_cloudwatch_logs_exports includes postgresql",
+      "patch_content": "enabled_cloudwatch_logs_exports = [\"postgresql\"]"
     }
   ]
 }

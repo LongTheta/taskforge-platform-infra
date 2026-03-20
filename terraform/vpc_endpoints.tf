@@ -83,28 +83,3 @@ resource "aws_vpc_endpoint" "logs" {
     Name = "${var.project}-${var.environment}-logs-endpoint"
   }
 }
-
-resource "aws_security_group" "vpc_endpoints" {
-  count       = var.enable_vpc_endpoints ? 1 : 0
-  name        = "${var.project}-${var.environment}-vpc-endpoints"
-  description = "Allow HTTPS from VPC for interface endpoints"
-  vpc_id      = aws_vpc.main.id
-
-  ingress {
-    from_port   = 443
-    to_port     = 443
-    protocol    = "tcp"
-    cidr_blocks = [var.vpc_cidr]
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags = {
-    Name = "${var.project}-${var.environment}-vpc-endpoints-sg"
-  }
-}

@@ -1,9 +1,15 @@
 # CloudTrail — API audit logging for compliance and security
 # Optional via enable_cloudtrail variable
+# Bucket name uses random_id for global uniqueness (per terraform-deployment-checklist)
+
+resource "random_id" "cloudtrail_suffix" {
+  count       = var.enable_cloudtrail ? 1 : 0
+  byte_length = 4
+}
 
 resource "aws_s3_bucket" "cloudtrail" {
   count  = var.enable_cloudtrail ? 1 : 0
-  bucket = "${var.project}-${var.environment}-cloudtrail-logs"
+  bucket = "${var.project}-${var.environment}-cloudtrail-${random_id.cloudtrail_suffix[0].hex}"
 
   tags = {
     Name = "${var.project}-${var.environment}-cloudtrail"
@@ -92,8 +98,10 @@ resource "aws_cloudtrail" "main" {
   }
 
   # CloudTrail validates bucket policy before creating; policy must be applied first
+  # Include encryption config for apply-order clarity (per terraform-apply-order)
   depends_on = [
     aws_s3_bucket.cloudtrail,
+    aws_s3_bucket_server_side_encryption_configuration.cloudtrail,
     aws_s3_bucket_policy.cloudtrail,
     aws_s3_bucket_public_access_block.cloudtrail,
   ]

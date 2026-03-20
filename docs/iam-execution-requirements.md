@@ -16,10 +16,12 @@ The role or user running `terraform apply` for this stack needs the permissions 
 | **ECR** | Repositories, lifecycle policies |
 | **Secrets Manager** | Backend and security secrets |
 | **KMS** | Keys for Secrets Manager and RDS |
-| **CloudTrail** | Trail, S3 bucket |
-| **CloudWatch** | Log groups (flow logs), metric alarms |
+| **CloudTrail** | Trail, S3 bucket (globally unique name via random_id) |
+| **CloudWatch** | Log groups (flow logs), metric alarms (RDS, EKS control plane) |
 | **S3** | Terraform state, CloudTrail logs |
 | **DynamoDB** | Terraform state lock |
+
+**Note:** The `random` provider (hashicorp/random) is used for CloudTrail bucket uniqueness. It does not require AWS IAM permissions.
 
 ---
 
