@@ -27,15 +27,15 @@ terraform {
 provider "aws" {
   region = var.aws_region
   default_tags {
-    tags = {
+    tags = merge(var.tags, {
       Project            = var.project
       Environment        = var.environment
       Owner              = var.owner
       CostCenter         = var.cost_center
       ManagedBy          = "terraform"
-      Purpose            = "taskforge-platform"
+      Purpose            = "${var.project}-platform"
       DataClassification = var.data_classification
       Lifecycle          = var.lifecycle_stage
-    }
+    })
   }
 }

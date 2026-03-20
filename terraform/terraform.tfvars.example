@@ -1,24 +1,80 @@
-# Copy to terraform.tfvars and fill in
-# Never commit terraform.tfvars
+# Copy to terraform.tfvars and fill in. Never commit terraform.tfvars.
+#
+# For per-environment config, use dev.tfvars.example, stage.tfvars.example, prod.tfvars.example
+# instead — copy to dev.tfvars, stage.tfvars, prod.tfvars and run: terraform plan -var-file=dev.tfvars
+#
+# All customer-configurable choices are in variables.tf. Replace ADD_VALUE_HERE before apply.
 
-aws_region   = "us-east-1"
-environment = "dev"
-project      = "taskforge"
+environment = "ADD_VALUE_HERE"   # e.g. dev, prod
+project     = "ADD_VALUE_HERE"   # your project name
+aws_region  = "ADD_VALUE_HERE"    # e.g. us-east-1
+vpc_cidr    = "ADD_VALUE_HERE"    # e.g. 10.0.0.0/16
 
-# Required — use strong password; consider Secrets Manager for production
-db_password = "REPLACE_WITH_STRONG_PASSWORD"
+# Compute
+eks_node_instance_types = ["ADD_VALUE_HERE"]   # e.g. ["t3.medium"]
+rds_instance_class      = "ADD_VALUE_HERE"     # e.g. db.t3.micro
+rds_engine_version      = "ADD_VALUE_HERE"     # e.g. 15.4
+rds_db_name             = "ADD_VALUE_HERE"     # e.g. taskforge
+rds_username            = "ADD_VALUE_HERE"     # e.g. taskforge_admin
+rds_allocated_storage   = 0                    # ADD_VALUE_HERE - e.g. 20 (GB)
+rds_backup_retention_period = 0               # ADD_VALUE_HERE - e.g. 0 for dev, 7 for prod
+rds_multi_az               = false            # ADD_VALUE_HERE - e.g. true for prod HA
+eks_desired_size        = 0                    # ADD_VALUE_HERE - e.g. 1 for dev
+eks_min_size            = 0                    # ADD_VALUE_HERE - e.g. 1
+eks_max_size            = 0                    # ADD_VALUE_HERE - e.g. 2
+vpc_az_count            = 0                    # ADD_VALUE_HERE - e.g. 1 for dev, 2 for prod
+nat_gateway_count       = 0                    # ADD_VALUE_HERE - e.g. 1 (when enable_nat_gateway=true)
 
-# Optional
-owner               = "platform-team"
-cost_center         = "platform"
-data_classification = "internal"
+# ECR
+ecr_lifecycle_max_image_count = 0             # ADD_VALUE_HERE - e.g. 10
 
-# Dev: smaller; prod: larger
-# eks_node_instance_types = ["t3.medium"]
-# rds_instance_class      = "db.t3.micro"
+# CloudTrail (when enable_cloudtrail=true)
+cloudtrail_log_retention_days = 0             # ADD_VALUE_HERE - e.g. 90
 
-# Prod: restrict EKS API to VPC (kubectl from bastion/VPN)
-# eks_endpoint_public_access = false
+# Observability (when enable_observability_alarms=true)
+alarm_period_seconds      = 0                # ADD_VALUE_HERE - e.g. 300
+rds_cpu_alarm_threshold   = 0                # ADD_VALUE_HERE - e.g. 80
+rds_connections_alarm_threshold = 0          # ADD_VALUE_HERE - e.g. 80
 
-# Observability (default: true)
+# Required — prefer Vault or TF_VAR_db_password; never commit real values
+db_password = "REPLACE_WITH_SECURE_PASSWORD"
+
+# Optional (replace or remove)
+owner               = "ADD_VALUE_HERE"   # e.g. platform-team
+cost_center         = "ADD_VALUE_HERE"   # e.g. platform
+data_classification = "ADD_VALUE_HERE"   # e.g. internal
+
+# VPC — single NAT for dev saves ~$32/month
+# nat_gateway_count = 1
+# vpc_az_count      = 2
+
+# RDS — dev: no backup; prod: 7 days, final snapshot
+# rds_backup_retention_period = 0
+# rds_skip_final_snapshot    = true
+
+# Security defaults: EKS endpoint private, CloudTrail off, alarms off
+# Enable explicitly when justified:
+# eks_endpoint_public_access = true   # for kubectl from laptop
 # enable_cloudtrail = true
+# enable_observability_alarms = true
+# use_customer_managed_kms = true     # for compliance
+
+# RDS Multi-AZ (explicit; not tied to environment name)
+# rds_multi_az = false
+
+# ECR repos (add names to create more)
+# ecr_repository_names = ["backend", "security"]
+
+# Secrets — workloads and placeholders; replace after first apply
+# secrets_workload_names         = ["backend", "security"]
+# secrets_workloads_with_db_url  = ["backend"]
+# secrets_workload_placeholders = {
+#   backend = { secret_key = "ADD_VALUE_HERE" }   # e.g. openssl rand -hex 32
+#   security = { api_key = "ADD_VALUE_HERE" }    # strong API key
+# }
+
+# NAT: set false when VPC endpoints cover egress (ECR, S3, logs)
+# enable_nat_gateway = true
+
+# Additional tags (merged with default_tags)
+# tags = { Team = "platform" }

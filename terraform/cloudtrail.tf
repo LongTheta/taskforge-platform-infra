@@ -16,6 +16,15 @@ resource "aws_s3_bucket" "cloudtrail" {
   }
 }
 
+resource "aws_s3_bucket_versioning" "cloudtrail" {
+  count  = var.enable_cloudtrail ? 1 : 0
+  bucket = aws_s3_bucket.cloudtrail[0].id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
 resource "aws_s3_bucket_server_side_encryption_configuration" "cloudtrail" {
   count  = var.enable_cloudtrail ? 1 : 0
   bucket = aws_s3_bucket.cloudtrail[0].id
@@ -37,11 +46,11 @@ resource "aws_s3_bucket_lifecycle_configuration" "cloudtrail" {
     filter {}
 
     expiration {
-      days = 90
+      days = var.cloudtrail_log_retention_days
     }
 
     noncurrent_version_expiration {
-      noncurrent_days = 30
+      noncurrent_days = var.cloudtrail_noncurrent_version_days
     }
   }
 }
@@ -88,9 +97,9 @@ resource "aws_cloudtrail" "main" {
   count                         = var.enable_cloudtrail ? 1 : 0
   name                          = "${var.project}-${var.environment}"
   s3_bucket_name                = aws_s3_bucket.cloudtrail[0].id
-  include_global_service_events = true
-  is_multi_region_trail         = false
-  enable_log_file_validation    = true
+  include_global_service_events = var.cloudtrail_include_global_service_events
+  is_multi_region_trail         = var.cloudtrail_is_multi_region
+  enable_log_file_validation    = var.cloudtrail_enable_log_file_validation
 
   event_selector {
     read_write_type           = "All"
@@ -101,6 +110,7 @@ resource "aws_cloudtrail" "main" {
   # Include encryption config for apply-order clarity (per terraform-apply-order)
   depends_on = [
     aws_s3_bucket.cloudtrail,
+    aws_s3_bucket_versioning.cloudtrail,
     aws_s3_bucket_server_side_encryption_configuration.cloudtrail,
     aws_s3_bucket_policy.cloudtrail,
     aws_s3_bucket_public_access_block.cloudtrail,

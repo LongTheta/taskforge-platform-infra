@@ -13,24 +13,34 @@ output "rds_endpoint" {
   value       = aws_db_instance.main.endpoint
 }
 
+output "ecr_repository_urls" {
+  description = "ECR repository URLs"
+  value       = { for k, r in aws_ecr_repository.repos : k => r.repository_url }
+}
+
 output "ecr_backend_url" {
-  description = "ECR repository URL for taskforge-backend"
-  value       = aws_ecr_repository.backend.repository_url
+  description = "ECR repository URL for backend (when in ecr_repository_names)"
+  value       = try(aws_ecr_repository.repos["backend"].repository_url, null)
 }
 
 output "ecr_security_url" {
-  description = "ECR repository URL for taskforge-security"
-  value       = aws_ecr_repository.security.repository_url
+  description = "ECR repository URL for security (when in ecr_repository_names)"
+  value       = try(aws_ecr_repository.repos["security"].repository_url, null)
+}
+
+output "secrets_arns" {
+  description = "Secrets Manager ARNs per workload"
+  value       = { for k, s in aws_secretsmanager_secret.workloads : k => s.arn }
 }
 
 output "secrets_backend_arn" {
-  description = "Secrets Manager ARN for backend secrets"
-  value       = aws_secretsmanager_secret.backend.arn
+  description = "Secrets Manager ARN for backend (when in secrets_workload_names)"
+  value       = try(aws_secretsmanager_secret.workloads["backend"].arn, null)
 }
 
 output "secrets_security_arn" {
-  description = "Secrets Manager ARN for security secrets"
-  value       = aws_secretsmanager_secret.security.arn
+  description = "Secrets Manager ARN for security (when in secrets_workload_names)"
+  value       = try(aws_secretsmanager_secret.workloads["security"].arn, null)
 }
 
 output "vpc_id" {
@@ -53,12 +63,17 @@ output "ecr_push_policy_arn" {
   value       = aws_iam_policy.ecr_push.arn
 }
 
+output "kms_key_arns" {
+  description = "KMS key ARNs (empty when use_customer_managed_kms=false)"
+  value       = { for k, key in aws_kms_key.keys : k => key.arn }
+}
+
 output "kms_secrets_key_arn" {
-  description = "KMS key ARN for Secrets Manager"
-  value       = aws_kms_key.secrets.arn
+  description = "KMS key ARN for Secrets Manager (null when use_customer_managed_kms=false)"
+  value       = try(aws_kms_key.keys["secrets"].arn, null)
 }
 
 output "kms_rds_key_arn" {
-  description = "KMS key ARN for RDS encryption"
-  value       = aws_kms_key.rds.arn
+  description = "KMS key ARN for RDS encryption (null when use_customer_managed_kms=false)"
+  value       = try(aws_kms_key.keys["rds"].arn, null)
 }

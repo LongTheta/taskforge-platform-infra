@@ -1,66 +1,53 @@
-# CloudWatch Alarms — RDS, EKS observability
-# Naming: {resource}-{metric}-{threshold}
+# CloudWatch Alarms — EKS, RDS observability
+# Only created when enable_observability_alarms=true; all thresholds configurable via variables
 
-# EKS cluster — control plane 5xx errors (EKS 1.28+)
-resource "aws_cloudwatch_metric_alarm" "eks_control_plane" {
-  alarm_name          = "${var.project}-${var.environment}-eks-control-plane-5xx"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 2
-  metric_name         = "apiserver_request_total_5XX"
-  namespace           = "AWS/EKS"
-  period              = 300
-  statistic           = "Sum"
-  threshold           = 1
-  alarm_description   = "EKS control plane 5xx errors"
-  treat_missing_data  = "notBreaching"
-
-  dimensions = {
-    ClusterName = aws_eks_cluster.main.name
-  }
-
-  tags = {
-    Name = "${var.project}-${var.environment}-eks-control-plane-alarm"
-  }
+locals {
+  alarm_definitions = var.enable_observability_alarms ? {
+    eks-control-plane-5xx = {
+      namespace           = "AWS/EKS"
+      metric_name         = "apiserver_request_total_5XX"
+      statistic           = "Sum"
+      comparison_operator = "GreaterThanThreshold"
+      threshold           = var.eks_control_plane_5xx_alarm_threshold
+      evaluation_periods  = var.alarm_evaluation_periods
+      description         = "EKS control plane 5xx errors"
+      dimensions          = { ClusterName = aws_eks_cluster.main.name }
+    }
+    rds-cpu = {
+      namespace           = "AWS/RDS"
+      metric_name         = "CPUUtilization"
+      statistic           = "Average"
+      comparison_operator = "GreaterThanThreshold"
+      threshold           = var.rds_cpu_alarm_threshold
+      evaluation_periods  = var.alarm_evaluation_periods
+      description         = "RDS CPU utilization exceeded ${var.rds_cpu_alarm_threshold}%"
+      dimensions          = { DBInstanceIdentifier = aws_db_instance.main.id }
+    }
+    rds-connections = {
+      namespace           = "AWS/RDS"
+      metric_name         = "DatabaseConnections"
+      statistic           = "Average"
+      comparison_operator = "GreaterThanThreshold"
+      threshold           = var.rds_connections_alarm_threshold
+      evaluation_periods  = var.alarm_evaluation_periods
+      description         = "RDS database connections high"
+      dimensions          = { DBInstanceIdentifier = aws_db_instance.main.id }
+    }
+  } : {}
 }
 
-resource "aws_cloudwatch_metric_alarm" "rds_cpu" {
-  alarm_name          = "${var.project}-${var.environment}-rds-cpu-utilization"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 2
-  metric_name         = "CPUUtilization"
-  namespace           = "AWS/RDS"
-  period              = 300
-  statistic           = "Average"
-  threshold           = 80
-  alarm_description   = "RDS CPU utilization exceeded 80%"
+resource "aws_cloudwatch_metric_alarm" "alarms" {
+  for_each = local.alarm_definitions
+
+  alarm_name          = "${var.project}-${var.environment}-${each.key}"
+  namespace           = each.value.namespace
+  metric_name         = each.value.metric_name
+  statistic           = each.value.statistic
+  period              = var.alarm_period_seconds
+  comparison_operator = each.value.comparison_operator
+  threshold           = each.value.threshold
+  evaluation_periods  = var.alarm_evaluation_periods
+  alarm_description   = each.value.description
   treat_missing_data  = "notBreaching"
-
-  dimensions = {
-    DBInstanceIdentifier = aws_db_instance.main.id
-  }
-
-  tags = {
-    Name = "${var.project}-${var.environment}-rds-cpu-alarm"
-  }
-}
-
-resource "aws_cloudwatch_metric_alarm" "rds_connections" {
-  alarm_name          = "${var.project}-${var.environment}-rds-database-connections"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 2
-  metric_name         = "DatabaseConnections"
-  namespace           = "AWS/RDS"
-  period              = 300
-  statistic           = "Average"
-  threshold           = 80
-  alarm_description   = "RDS database connections high"
-  treat_missing_data  = "notBreaching"
-
-  dimensions = {
-    DBInstanceIdentifier = aws_db_instance.main.id
-  }
-
-  tags = {
-    Name = "${var.project}-${var.environment}-rds-connections-alarm"
-  }
+  dimensions          = each.value.dimensions
 }

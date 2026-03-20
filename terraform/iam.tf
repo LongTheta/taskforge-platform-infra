@@ -27,7 +27,7 @@ resource "aws_iam_role" "eso" {
       Action = "sts:AssumeRoleWithWebIdentity"
       Condition = {
         StringEquals = {
-          "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:sub" = "system:serviceaccount:external-secrets:external-secrets"
+          "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:sub" = "system:serviceaccount:${var.eso_service_account_namespace}:${var.eso_service_account_name}"
         }
       }
     }]
@@ -40,12 +40,9 @@ resource "aws_iam_role_policy" "eso_secrets" {
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Effect = "Allow"
-      Action = ["secretsmanager:GetSecretValue"]
-      Resource = [
-        aws_secretsmanager_secret.backend.arn,
-        aws_secretsmanager_secret.security.arn
-      ]
+      Effect   = "Allow"
+      Action   = ["secretsmanager:GetSecretValue"]
+      Resource = [for s in aws_secretsmanager_secret.workloads : s.arn]
     }]
   })
 }
@@ -64,7 +61,7 @@ resource "aws_iam_role" "lb_controller" {
       Action = "sts:AssumeRoleWithWebIdentity"
       Condition = {
         StringEquals = {
-          "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:sub" = "system:serviceaccount:kube-system:aws-load-balancer-controller"
+          "${replace(aws_iam_openid_connect_provider.eks.url, "https://", "")}:sub" = "system:serviceaccount:${var.lb_controller_service_account_namespace}:${var.lb_controller_service_account_name}"
         }
       }
     }]
@@ -78,6 +75,7 @@ resource "aws_iam_role_policy" "lb_controller" {
 }
 
 # --- IAM Policy: ECR Push for CI ---
+# GetAuthorizationToken does not support resource-level permissions; * required per AWS docs
 resource "aws_iam_policy" "ecr_push" {
   name        = "${var.project}-${var.environment}-ecr-push"
   description = "Allow push to ECR repositories"
@@ -103,10 +101,7 @@ resource "aws_iam_policy" "ecr_push" {
           "ecr:UploadLayerPart",
           "ecr:CompleteLayerUpload"
         ]
-        Resource = [
-          aws_ecr_repository.backend.arn,
-          aws_ecr_repository.security.arn
-        ]
+        Resource = [for r in aws_ecr_repository.repos : r.arn]
       }
     ]
   })
@@ -122,7 +117,7 @@ resource "aws_iam_policy" "rds_connect" {
     Statement = [{
       Effect   = "Allow"
       Action   = ["rds-db:connect"]
-      Resource = "arn:aws:rds-db:${var.aws_region}:${data.aws_caller_identity.current.account_id}:dbuser:${aws_db_instance.main.resource_id}/taskforge_admin"
+      Resource = "arn:aws:rds-db:${var.aws_region}:${data.aws_caller_identity.current.account_id}:dbuser:${aws_db_instance.main.resource_id}/${var.rds_username}"
     }]
   })
 }

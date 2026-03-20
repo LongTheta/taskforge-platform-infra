@@ -1,0 +1,56 @@
+# prod.tfvars — Copy to prod.tfvars and fill in. Never commit prod.tfvars.
+# Use: terraform plan -var-file=prod.tfvars
+
+# Core
+project     = "ADD_VALUE_HERE"
+environment = "prod"
+aws_region  = "ADD_VALUE_HERE"
+vpc_cidr    = "ADD_VALUE_HERE"    # e.g. 10.0.0.0/16
+
+# Ownership / governance
+owner               = "ADD_VALUE_HERE"
+cost_center         = "ADD_VALUE_HERE"
+data_classification = "ADD_VALUE_HERE"
+
+# Compute
+eks_node_instance_types = ["ADD_VALUE_HERE"]   # e.g. ["t3.medium"] or ["m5.large"]
+rds_instance_class      = "ADD_VALUE_HERE"     # e.g. db.t3.medium or db.r5.large
+rds_engine_version      = "ADD_VALUE_HERE"     # e.g. 15.4
+rds_db_name             = "ADD_VALUE_HERE"     # e.g. taskforge
+rds_username            = "ADD_VALUE_HERE"     # e.g. taskforge_admin
+rds_allocated_storage   = 0                    # ADD_VALUE_HERE - e.g. 100 (GB) for prod
+rds_backup_retention_period = 0                # ADD_VALUE_HERE - e.g. 7 for prod
+rds_multi_az               = false            # ADD_VALUE_HERE - e.g. true for prod HA
+eks_desired_size        = 0                    # ADD_VALUE_HERE - e.g. 2 for prod
+eks_min_size            = 0                    # ADD_VALUE_HERE - e.g. 2
+eks_max_size            = 0                    # ADD_VALUE_HERE - e.g. 4 for prod
+vpc_az_count            = 0                    # ADD_VALUE_HERE - e.g. 2 for prod
+nat_gateway_count       = 0                    # ADD_VALUE_HERE - e.g. 2 for prod HA (when enable_nat_gateway=true)
+
+# Required
+# Prefer Vault or TF_VAR_db_password instead of committing real values
+db_password = "REPLACE_WITH_SECURE_PASSWORD"
+
+# ECR
+ecr_lifecycle_max_image_count = 0             # ADD_VALUE_HERE - e.g. 20 for prod
+
+# CloudTrail (when enable_cloudtrail=true)
+cloudtrail_log_retention_days = 0             # ADD_VALUE_HERE - e.g. 90 for prod
+
+# Observability (when enable_observability_alarms=true)
+alarm_period_seconds      = 0                # ADD_VALUE_HERE - e.g. 300
+rds_cpu_alarm_threshold   = 0                # ADD_VALUE_HERE - e.g. 80
+rds_connections_alarm_threshold = 0          # ADD_VALUE_HERE - e.g. 80
+
+# Secrets (replace after initial apply)
+secrets_workload_placeholders = {
+  backend = { secret_key = "REPLACE_WITH_OPENSSL_RAND_HEX_32_OUTPUT" }
+  security = { api_key = "REPLACE_WITH_STRONG_API_KEY" }
+}
+
+# Tags
+tags = {
+  Environment        = "prod"
+  Project            = "ADD_VALUE_HERE"
+  DataClassification = "ADD_VALUE_HERE"
+}

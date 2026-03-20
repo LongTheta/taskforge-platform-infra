@@ -34,6 +34,51 @@ The assessment workflow reads the advisor for guidance, evaluates taskforge-back
 
 ---
 
+## Configuration Model
+
+**All customization happens through variables.** You configure infrastructure by editing `.tfvars` files — not by modifying resource files.
+
+| Layer | Purpose |
+|-------|---------|
+| **variables.tf** | Defines all configurable inputs (project, environment, feature flags, sizing, etc.) |
+| **.tfvars files** | Where you make changes — use per-environment templates or `terraform.tfvars` |
+| **Resource files** (.tf) | Consume variables only; do not edit unless extending the platform |
+
+### tfvars Templates
+
+Per-environment templates are provided. **Replace all `ADD_VALUE_HERE` and `REPLACE_WITH_*` placeholders** before apply.
+
+| File | Use |
+|------|-----|
+| `dev.tfvars.example` | Copy to `dev.tfvars` → `terraform plan -var-file=dev.tfvars` |
+| `stage.tfvars.example` | Copy to `stage.tfvars` → `terraform plan -var-file=stage.tfvars` |
+| `prod.tfvars.example` | Copy to `prod.tfvars` → `terraform plan -var-file=prod.tfvars` |
+| `terraform.tfvars.example` | Single-file option; copy to `terraform.tfvars` |
+
+**Required values** (no defaults):
+- `environment` — dev, stage, or prod
+- `db_password` — use Vault or `TF_VAR_db_password` in production; never commit real values
+
+**Template structure** (Core → Ownership → Required → Secrets → Tags):
+- Core: project, environment, aws_region
+- Ownership: owner, cost_center, data_classification
+- Required: db_password
+- Secrets: secrets_workload_placeholders (replace after initial apply)
+- Tags: map with placeholders
+
+### How to Override Defaults
+
+Override any variable in `variables.tf` by setting it in your `.tfvars` file. Defaults are secure and cost-conscious; enable features only when justified:
+
+- **CloudTrail** — `enable_cloudtrail = true` for compliance
+- **KMS** — `use_customer_managed_kms = true` for key control
+- **Alarms** — `enable_observability_alarms = true` for production
+- **EKS access** — `eks_endpoint_public_access = true` for kubectl from laptop
+
+See `terraform/terraform.tfvars.example` for the full variable list.
+
+---
+
 ## Prerequisites
 
 - Terraform >= 1.5
@@ -55,26 +100,31 @@ The assessment workflow reads the advisor for guidance, evaluates taskforge-back
    # Edit backend.hcl if using different bucket/table/region
    ```
 
-3. **Copy tfvars:**
+3. **Copy tfvars** (choose one):
    ```bash
+   # Per-environment (recommended)
+   cp terraform/dev.tfvars.example terraform/dev.tfvars
+   # Edit dev.tfvars — replace ADD_VALUE_HERE and REPLACE_WITH_SECURE_PASSWORD
+
+   # Or single-file
    cp terraform/terraform.tfvars.example terraform/terraform.tfvars
    ```
 
-4. **Set variables** in `terraform/terraform.tfvars`:
-   - `environment` — dev or prod
-   - `db_password` — strong password (or use `TF_VAR_db_password`)
-   - `eks_endpoint_public_access` — set `false` for prod (restricts kubectl to VPC)
+4. **Set required values** (see [Configuration Model](#configuration-model)):
+   - `environment` — dev, stage, or prod
+   - `db_password` — strong password (prefer `TF_VAR_db_password` or Vault)
+   - Replace all `ADD_VALUE_HERE` and `REPLACE_WITH_*` placeholders
 
 5. **Initialize and plan:**
    ```bash
    cd terraform
    terraform init -backend-config=backend.hcl
-   terraform plan
+   terraform plan -var-file=dev.tfvars   # or omit -var-file if using terraform.tfvars
    ```
 
-4. **Apply** when ready:
+6. **Apply** when ready:
    ```bash
-   terraform apply
+   terraform apply -var-file=dev.tfvars   # or omit if using terraform.tfvars
    ```
 
 ---
@@ -138,7 +188,10 @@ taskforge-platform-infra/
 │   ├── vpc_endpoints.tf
 │   ├── policies/      # AWS Load Balancer Controller IAM policy
 │   ├── backend.hcl.example
-│   └── terraform.tfvars.example
+│   ├── terraform.tfvars.example
+│   ├── dev.tfvars.example
+│   ├── stage.tfvars.example
+│   └── prod.tfvars.example
 ├── scripts/
 │   └── bootstrap-backend.sh  # Create S3 + DynamoDB for Terraform state
 ├── docs/

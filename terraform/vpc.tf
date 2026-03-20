@@ -7,7 +7,7 @@ data "aws_availability_zones" "available" {
 }
 
 locals {
-  azs = slice(data.aws_availability_zones.available.names, 0, 2)
+  azs = slice(data.aws_availability_zones.available.names, 0, var.vpc_az_count)
 }
 
 resource "aws_vpc" "main" {
@@ -45,13 +45,14 @@ resource "aws_internet_gateway" "main" {
   vpc_id = aws_vpc.main.id
 }
 
+# NAT: optional; when false, private subnets use VPC endpoints only (no internet egress)
 resource "aws_eip" "nat" {
-  count  = length(local.azs)
+  count  = var.enable_nat_gateway ? var.nat_gateway_count : 0
   domain = "vpc"
 }
 
 resource "aws_nat_gateway" "main" {
-  count         = length(local.azs)
+  count         = var.enable_nat_gateway ? var.nat_gateway_count : 0
   allocation_id = aws_eip.nat[count.index].id
   subnet_id     = aws_subnet.public[count.index].id
 }
@@ -64,13 +65,17 @@ resource "aws_route_table" "public" {
   }
 }
 
+# Private route tables; NAT route added only when enable_nat_gateway=true
 resource "aws_route_table" "private" {
   count  = length(local.azs)
   vpc_id = aws_vpc.main.id
-  route {
-    cidr_block     = "0.0.0.0/0"
-    nat_gateway_id = aws_nat_gateway.main[count.index].id
-  }
+}
+
+resource "aws_route" "private_nat" {
+  count                  = var.enable_nat_gateway ? length(local.azs) : 0
+  route_table_id         = aws_route_table.private[count.index].id
+  destination_cidr_block = "0.0.0.0/0"
+  nat_gateway_id         = aws_nat_gateway.main[min(count.index, var.nat_gateway_count - 1)].id
 }
 
 resource "aws_route_table_association" "public" {
@@ -89,7 +94,7 @@ resource "aws_route_table_association" "private" {
 resource "aws_flow_log" "main" {
   count                = var.enable_vpc_flow_logs ? 1 : 0
   vpc_id               = aws_vpc.main.id
-  traffic_type         = "ALL"
+  traffic_type         = var.vpc_flow_log_traffic_type
   log_destination_type = "cloud-watch-logs"
   log_destination      = aws_cloudwatch_log_group.flow_logs[0].arn
   iam_role_arn         = aws_iam_role.flow_logs[0].arn
@@ -98,7 +103,7 @@ resource "aws_flow_log" "main" {
 resource "aws_cloudwatch_log_group" "flow_logs" {
   count             = var.enable_vpc_flow_logs ? 1 : 0
   name              = "/aws/vpc-flow-logs/${var.project}-${var.environment}"
-  retention_in_days = 14
+  retention_in_days = var.vpc_flow_log_retention_days
 }
 
 resource "aws_iam_role" "flow_logs" {

@@ -1,0 +1,56 @@
+# stage.tfvars — Copy to stage.tfvars and fill in. Never commit stage.tfvars.
+# Use: terraform plan -var-file=stage.tfvars
+
+# Core
+project     = "ADD_VALUE_HERE"
+environment = "stage"
+aws_region  = "ADD_VALUE_HERE"
+vpc_cidr    = "ADD_VALUE_HERE"    # e.g. 10.0.0.0/16
+
+# Ownership / governance
+owner               = "ADD_VALUE_HERE"
+cost_center         = "ADD_VALUE_HERE"
+data_classification = "ADD_VALUE_HERE"
+
+# Compute
+eks_node_instance_types = ["ADD_VALUE_HERE"]   # e.g. ["t3.medium"]
+rds_instance_class      = "ADD_VALUE_HERE"    # e.g. db.t3.micro
+rds_engine_version      = "ADD_VALUE_HERE"    # e.g. 15.4
+rds_db_name             = "ADD_VALUE_HERE"    # e.g. taskforge
+rds_username            = "ADD_VALUE_HERE"    # e.g. taskforge_admin
+rds_allocated_storage   = 0                   # ADD_VALUE_HERE - e.g. 20 (GB)
+rds_backup_retention_period = 0               # ADD_VALUE_HERE - e.g. 7
+rds_multi_az               = false           # ADD_VALUE_HERE - e.g. true for HA
+eks_desired_size        = 0                   # ADD_VALUE_HERE - e.g. 2
+eks_min_size            = 0                   # ADD_VALUE_HERE - e.g. 1
+eks_max_size            = 0                   # ADD_VALUE_HERE - e.g. 4
+vpc_az_count            = 0                   # ADD_VALUE_HERE - e.g. 2
+nat_gateway_count       = 0                   # ADD_VALUE_HERE - e.g. 1 (when enable_nat_gateway=true)
+
+# Required
+# Prefer Vault or TF_VAR_db_password instead of committing real values
+db_password = "REPLACE_WITH_SECURE_PASSWORD"
+
+# ECR
+ecr_lifecycle_max_image_count = 0             # ADD_VALUE_HERE - e.g. 10
+
+# CloudTrail (when enable_cloudtrail=true)
+cloudtrail_log_retention_days = 0             # ADD_VALUE_HERE - e.g. 90
+
+# Observability (when enable_observability_alarms=true)
+alarm_period_seconds      = 0                # ADD_VALUE_HERE - e.g. 300
+rds_cpu_alarm_threshold   = 0                # ADD_VALUE_HERE - e.g. 80
+rds_connections_alarm_threshold = 0          # ADD_VALUE_HERE - e.g. 80
+
+# Secrets (replace after initial apply)
+secrets_workload_placeholders = {
+  backend = { secret_key = "REPLACE_WITH_OPENSSL_RAND_HEX_32_OUTPUT" }
+  security = { api_key = "REPLACE_WITH_STRONG_API_KEY" }
+}
+
+# Tags
+tags = {
+  Environment        = "stage"
+  Project            = "ADD_VALUE_HERE"
+  DataClassification = "ADD_VALUE_HERE"
+}

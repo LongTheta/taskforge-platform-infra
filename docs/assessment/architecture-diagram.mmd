@@ -1,0 +1,44 @@
+flowchart TB
+  subgraph Internet["Internet"]
+    Users[Users]
+  end
+
+  subgraph VPC["VPC (10.0.0.0/16)"]
+    subgraph Public["Public Subnets"]
+      IGW[Internet Gateway]
+      NAT[NAT Gateway optional]
+    end
+    subgraph Private["Private Subnets (2 AZs)"]
+      EKS[EKS Cluster]
+      subgraph Workloads["Workloads"]
+        Backend[taskforge-backend]
+        Security[taskforge-security]
+      end
+    end
+    subgraph Data["Data Layer"]
+      RDS[(RDS PostgreSQL)]
+    end
+  end
+
+  subgraph AWS_Services["AWS Services"]
+    ECR[ECR Repos]
+    SM[Secrets Manager]
+    KMS[KMS optional]
+  end
+
+  subgraph Observability["Observability"]
+    VFL[VPC Flow Logs]
+    CT[CloudTrail optional]
+    CW[CloudWatch Alarms optional]
+  end
+
+  Users --> IGW
+  IGW --> Public
+  EKS -->|IRSA/ESO| SM
+  EKS -->|Pull| ECR
+  Backend --> RDS
+  Security --> SM
+  RDS -->|Encrypted| KMS
+  SM -->|Encrypted| KMS
+  VPC --> VFL
+  VPC --> CT

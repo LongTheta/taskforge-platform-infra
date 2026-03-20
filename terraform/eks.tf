@@ -1,10 +1,11 @@
-# EKS Cluster — Kubernetes for taskforge-backend + taskforge-security
+# EKS Cluster — Kubernetes for backend + security workloads
 # Managed node group; IRSA for pod-level IAM
+# See docs/terraform-iam-patterns.md for required policy attachments
 
 resource "aws_eks_cluster" "main" {
   name     = "${var.project}-${var.environment}"
   role_arn = aws_iam_role.eks_cluster.arn
-  version  = "1.28"
+  version  = var.eks_version
 
   vpc_config {
     subnet_ids              = aws_subnet.private[*].id
@@ -19,15 +20,15 @@ resource "aws_eks_cluster" "main" {
 
 resource "aws_eks_node_group" "main" {
   cluster_name    = aws_eks_cluster.main.name
-  node_group_name = "default"
+  node_group_name = var.eks_node_group_name
   node_role_arn   = aws_iam_role.eks_node.arn
   subnet_ids      = aws_subnet.private[*].id
   instance_types  = var.eks_node_instance_types
 
   scaling_config {
-    desired_size = var.environment == "prod" ? 2 : 1
-    max_size     = var.environment == "prod" ? 4 : 2
-    min_size     = 1
+    desired_size = var.eks_desired_size
+    max_size     = var.eks_max_size
+    min_size     = var.eks_min_size
   }
 }
 
@@ -37,11 +38,9 @@ resource "aws_iam_role" "eks_cluster" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
-      Principal = {
-        Service = "eks.amazonaws.com"
-      }
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = { Service = "eks.amazonaws.com" }
     }]
   })
 }
@@ -57,11 +56,9 @@ resource "aws_iam_role" "eks_node" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
-      Principal = {
-        Service = "ec2.amazonaws.com"
-      }
+      Action    = "sts:AssumeRole"
+      Effect    = "Allow"
+      Principal = { Service = "ec2.amazonaws.com" }
     }]
   })
 }
